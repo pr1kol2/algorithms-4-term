@@ -1,3 +1,8 @@
 */build
 */create.sh
-.DS_Store
+1st_contest
+2nd_contest
+3rd_contest
+!1st_contest/A.cpp
+!1st constest/K.cpp
+!1st constest/P.cpp

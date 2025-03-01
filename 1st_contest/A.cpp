@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-std::vector<int> GetZFunction(std::string s) {
+std::vector<int> GetZFunction(const std::string& s) {
   int n = s.size();
   std::vector<int> z(n, 0);
   int left = 0;

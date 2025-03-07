@@ -5,30 +5,30 @@
 
 std::vector<size_t> GetZFunction(const std::string& string) {
   size_t str_size = string.size();
-  std::vector<size_t> z(str_size, 0);
+  std::vector<size_t> z_func(str_size, 0);
   size_t left = 0;
   size_t right = 0;
   for (size_t i = 1; i < str_size; ++i) {
     if (i <= right) {
-      z[i] = std::min(z[i - left], right - i + 1);
+      z_func[i] = std::min(z_func[i - left], right - i + 1);
     }
-    while (i + z[i] < str_size && string[z[i]] == string[i + z[i]]) {
-      ++z[i];
+    while (i + z_func[i] < str_size && string[z_func[i]] == string[i + z_func[i]]) {
+      ++z_func[i];
     }
-    if (i + z[i] - 1 > right) {
+    if (i + z_func[i] - 1 > right) {
       left = i;
-      right = i + z[i] - 1;
+      right = i + z_func[i] - 1;
     }
   }
-  return z;
+  return z_func;
 }
 
 void PrintPatternOccurrencesInString(const std::string& string,
                                      const std::string& pattern) {
-  auto z = GetZFunction(pattern + '#' + string);
+  auto z_func = GetZFunction(pattern + '#' + string);
 
-  for (size_t i = 0; i < z.size(); ++i) {
-    if (z[i] == pattern.size()) {
+  for (size_t i = 0; i < z_func.size(); ++i) {
+    if (z_func[i] == pattern.size()) {
       std::cout << i - (1 + pattern.size()) << '\n';
     }
   }

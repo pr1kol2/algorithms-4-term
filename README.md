@@ -3,5 +3,5 @@
 | Contest | Contents |
 | ------- | ------- |
 | 1. | [Algorithms on strings.](https://contest.yandex.ru/contest/74635/problems/) |
-| 2. | [TBA](about:blank) |
+| 2. | [Number theory](https://contest.yandex.ru/contest/76945/problems/) |
 | 3. | [TBA](about:blank) |

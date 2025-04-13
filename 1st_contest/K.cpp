@@ -5,18 +5,25 @@
 #include <string>
 #include <vector>
 
-struct AhoKorasikTrie {
-  static const size_t kAlphabetSize = 26;
-  static const char kFirstChar = 'a';
+template <typename T>
+class AhoKorasikTrie {
+  const size_t k_alphabet_size_;
+  const T k_first_char_;
 
-  AhoKorasikTrie() : root_(std::make_unique<Node>(-1, nullptr)), str_count(0) {}
+ public:
+  AhoKorasikTrie(T first_char, size_t alphabet_size)
+      : k_first_char_(first_char),
+        k_alphabet_size_(alphabet_size),
+        root_(std::make_unique<Node>(-1, nullptr, k_alphabet_size_)),
+        str_count(0) {}
 
-  void AddString(const std::string& str) {
+  void AddString(const std::vector<T>& str) {
     Node* current = root_.get();
     for (char character : str) {
-      size_t index = character - kFirstChar;
+      size_t index = character - k_first_char_;
       if (!current->children[index]) {
-        current->children[index] = std::make_unique<Node>(index, current);
+        current->children[index] =
+            std::make_unique<Node>(index, current, k_alphabet_size_);
       }
       current = current->children[index].get();
     }
@@ -25,10 +32,10 @@ struct AhoKorasikTrie {
     current->ids.push_back(str_count++);
   }
 
-  bool Find(const std::string& str) const {
+  bool Find(const std::vector<T>& str) const {
     const Node* current = root_.get();
     for (char character : str) {
-      size_t index = character - kFirstChar;
+      size_t index = character - k_first_char_;
       if (!current->children[index]) {
         return false;
       }
@@ -41,7 +48,7 @@ struct AhoKorasikTrie {
     std::queue<Node*> queue;
     root_->link = root_.get();
 
-    for (size_t i = 0; i < kAlphabetSize; ++i) {
+    for (size_t i = 0; i < k_alphabet_size_; ++i) {
       if (root_->children[i]) {
         Node* child = root_->children[i].get();
         child->link = root_.get();
@@ -53,31 +60,31 @@ struct AhoKorasikTrie {
       Node* node_ptr = queue.front();
       queue.pop();
 
-      for (size_t i = 0; i < kAlphabetSize; ++i) {
+      for (size_t i = 0; i < k_alphabet_size_; ++i) {
         if (node_ptr->children[i]) {
-          Node* u = node_ptr->children[i].get();
-          u->link = Go(node_ptr->link, i);
-          queue.push(u);
+          Node* child = node_ptr->children[i].get();
+          child->link = UpdateState(node_ptr->link, i);
+          queue.push(child);
         }
       }
     }
   }
 
   std::vector<size_t> CountMaskSubstringsOccurences(
-      const std::string& text, const std::vector<size_t>& substr_positions) {
+      const std::vector<T>& text, const std::vector<size_t>& substr_positions) {
     std::vector<size_t> result(text.size() + 1);
     Node* node_ptr = root_.get();
 
     for (size_t i = 0; i < text.size(); ++i) {
       char character = text[i];
-      size_t index = character - kFirstChar;
+      size_t index = character - k_first_char_;
 
-      if (index >= kAlphabetSize) {
+      if (index >= k_alphabet_size_) {
         node_ptr = root_.get();
         continue;
       }
 
-      node_ptr = Go(node_ptr, index);
+      node_ptr = UpdateState(node_ptr, index);
 
       Node* temp = node_ptr;
       while (temp != nullptr && temp != root_.get()) {
@@ -101,8 +108,8 @@ struct AhoKorasikTrie {
 
  private:
   struct Node {
-    std::array<std::unique_ptr<Node>, kAlphabetSize> children{};
-    std::array<Node*, kAlphabetSize> go{};
+    std::vector<std::unique_ptr<Node>> children{};
+    std::vector<Node*> go{};
     Node* link = nullptr;
     Node* parent;
     int parent_char;
@@ -110,9 +117,14 @@ struct AhoKorasikTrie {
     size_t length = 0;
     std::vector<size_t> ids{};
 
-    Node(int p_ch, Node* p) : parent_char(p_ch), parent(p) { go.fill(nullptr); }
+    Node(int p_ch, Node* p, size_t k_alphabet_size)
+        : parent_char(p_ch), parent(p) {
+      children.reserve(k_alphabet_size);
+      go.assign(k_alphabet_size, nullptr);
+    }
   };
 
+  // const char k_first_char_;
   std::unique_ptr<Node> root_;
   size_t str_count = 0;
 
@@ -121,18 +133,19 @@ struct AhoKorasikTrie {
       node_ptr->link =
           (node_ptr == root_.get() || node_ptr->parent == root_.get())
               ? root_.get()
-              : Go(Link(node_ptr->parent), node_ptr->parent_char);
+              : UpdateState(Link(node_ptr->parent), node_ptr->parent_char);
     }
     return node_ptr->link;
   }
 
-  Node* Go(Node* node_ptr, size_t added_char) {
+  Node* UpdateState(Node* node_ptr, size_t added_char) {
     if (node_ptr->go[added_char] == nullptr) {
       node_ptr->go[added_char] =
           node_ptr->children[added_char]
               ? node_ptr->children[added_char].get()
-              : (node_ptr == root_.get() ? root_.get()
-                                         : Go(Link(node_ptr), added_char));
+              : (node_ptr == root_.get()
+                     ? root_.get()
+                     : UpdateState(Link(node_ptr), added_char));
     }
     return node_ptr->go[added_char];
   }
@@ -164,14 +177,14 @@ void FindAllMaskOccurences(const std::string& mask, const std::string& text) {
   std::vector<size_t> substr_positions;
   GetMaskSubstrings(mask, substrings, substr_positions);
 
-  AhoKorasikTrie trie;
+  AhoKorasikTrie<char> trie('a', 26);
   for (auto& substr : substrings) {
-    trie.AddString(substr);
+    trie.AddString(std::vector(substr.begin(), substr.end()));
   }
   trie.BuildAutomaton();
 
-  auto mask_substr_occurences =
-      trie.CountMaskSubstringsOccurences(text, substr_positions);
+  auto mask_substr_occurences = trie.CountMaskSubstringsOccurences(
+      std::vector(text.begin(), text.end()), substr_positions);
 
   for (int i = 1;
        i <= static_cast<int>(text.size()) - static_cast<int>(mask.size()) + 1;

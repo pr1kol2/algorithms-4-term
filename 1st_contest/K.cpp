@@ -186,8 +186,13 @@ void FindAllMaskOccurences(const std::string& mask, const std::string& text) {
   auto mask_substr_occurences = trie.CountMaskSubstringsOccurences(
       std::vector(text.begin(), text.end()), substr_positions);
 
-  for (int i = 1;
-       i <= static_cast<int>(text.size()) - static_cast<int>(mask.size()) + 1;
+  if (text.size() < mask.size()) {
+    std::cout << "0\n";
+    return;
+  }
+
+  for (size_t i = 1;
+       i <= text.size() - mask.size() + 1;
        ++i) {
     if (mask_substr_occurences[i] == substrings.size()) {
       std::cout << i - 1 << " ";

@@ -14,12 +14,12 @@ class TwoSuffixTree {
     CountNodesDFS(root);
   }
 
-  ~TwoSuffixTree() { ClearNodesDFS(root); }
-
-  void PrintTree() {
-    int index = -1;
-    PrintSuffixTreeByDFS(root, 0, index, -1);
+  ~TwoSuffixTree() {
+    ClearNodesDFS(root); 
+    delete root_end_;
   }
+
+  friend std::ostream& operator<<(std::ostream& out, const TwoSuffixTree& tree);
 
   int GetTreeSize() const { return tree_size; }
 
@@ -57,6 +57,12 @@ class TwoSuffixTree {
         : start(start), end(end), suffix_link(root), suffix_index(-1) {}
   };
 
+  enum ReturnCode : int {
+    NONE = -1,
+    CONTINUE = 0,
+    BREAK = 1,
+  };
+
   int EdgeLength(Node* node) {
     if (node == root) {
       return 0;
@@ -74,6 +80,65 @@ class TwoSuffixTree {
     return false;
   }
 
+  ReturnCode ProcessSuffix(int pos) {
+    if (active_length_ == 0) {
+      active_edge_ = pos;
+    }
+
+    if (active_node_->children[text[active_edge_]] == nullptr) {
+      active_node_->children[text[active_edge_]] =
+          new Node(pos, &leaf_end_, root);
+
+      if (global_end_ != nullptr) {
+        global_end_->suffix_link = active_node_;
+        global_end_ = nullptr;
+      }
+    } else {
+      Node* next = active_node_->children[text[active_edge_]];
+      if (WalkDown(next)) {
+        return CONTINUE;
+      }
+      if (text[next->start + active_length_] == text[pos]) {
+        if (global_end_ != nullptr && active_node_ != root) {
+          global_end_->suffix_link = active_node_;
+          global_end_ = nullptr;
+        }
+
+        ++active_length_;
+        return BREAK;
+      }
+
+      split_end_ = new int;
+      *split_end_ = next->start + active_length_ - 1;
+
+      Node* split = new Node(next->start, split_end_, root);
+      active_node_->children[text[next->start]] = split;
+
+      split->children[text[pos]] = new Node(pos, &leaf_end_, root);
+      next->start += active_length_;
+      split->children[text[next->start]] = next;
+
+      if (global_end_ != nullptr) {
+        global_end_->suffix_link = split;
+      }
+
+      global_end_ = split;
+    }
+
+    return NONE;
+  }
+
+  void PostProcessSuffix(int pos) {
+    --remaining_suffix_count_;
+
+    if (active_node_ == root && active_length_ > 0) {
+      active_length_--;
+      active_edge_ = pos - remaining_suffix_count_ + 1;
+    } else if (active_node_ != root) {
+      active_node_ = active_node_->suffix_link;
+    }
+  }
+
   // Ukkonen's algorithm
   void ExtendSuffixTree(int pos) {
     leaf_end_ = pos;
@@ -83,58 +148,14 @@ class TwoSuffixTree {
     global_end_ = nullptr;
 
     while (remaining_suffix_count_ > 0) {
-      if (active_length_ == 0) {
-        active_edge_ = pos;
+      ReturnCode code = ProcessSuffix(pos);
+      if (code == BREAK) {
+        break;
+      } else if (code == CONTINUE) {
+        continue;
       }
 
-      if (active_node_->children[text[active_edge_]] == nullptr) {
-        active_node_->children[text[active_edge_]] =
-            new Node(pos, &leaf_end_, root);
-
-        if (global_end_ != nullptr) {
-          global_end_->suffix_link = active_node_;
-          global_end_ = nullptr;
-        }
-      } else {
-        Node* next = active_node_->children[text[active_edge_]];
-        if (WalkDown(next)) {
-          continue;
-        }
-        if (text[next->start + active_length_] == text[pos]) {
-          if (global_end_ != nullptr && active_node_ != root) {
-            global_end_->suffix_link = active_node_;
-            global_end_ = nullptr;
-          }
-
-          ++active_length_;
-          break;
-        }
-
-        split_end_ = new int;
-        *split_end_ = next->start + active_length_ - 1;
-
-        Node* split = new Node(next->start, split_end_, root);
-        active_node_->children[text[next->start]] = split;
-
-        split->children[text[pos]] = new Node(pos, &leaf_end_, root);
-        next->start += active_length_;
-        split->children[text[next->start]] = next;
-
-        if (global_end_ != nullptr) {
-          global_end_->suffix_link = split;
-        }
-
-        global_end_ = split;
-      }
-
-      --remaining_suffix_count_;
-
-      if (active_node_ == root && active_length_ > 0) {
-        active_length_--;
-        active_edge_ = pos - remaining_suffix_count_ + 1;
-      } else if (active_node_ != root) {
-        active_node_ = active_node_->suffix_link;
-      }
+      PostProcessSuffix(pos);
     }
   }
 
@@ -173,7 +194,7 @@ class TwoSuffixTree {
     delete node;
   }
 
-  void PrintSuffixTreeByDFS(Node* node, int level, int& index, int parent) {
+  void PrintSuffixTreeByDFS(Node* node, int level, int& index, int parent) const {
     if (node == nullptr) {
       return;
     }
@@ -200,6 +221,12 @@ class TwoSuffixTree {
   }
 };
 
+std::ostream& operator<<(std::ostream& out, const TwoSuffixTree& tree) {
+  int index = -1;
+  tree.PrintSuffixTreeByDFS(tree.root, 0, index, -1);
+  return out;
+}
+
 int main() {
   std::string str1;
   std::string str2;
@@ -210,7 +237,7 @@ int main() {
 
   std::cout << tree.GetTreeSize() << "\n";
 
-  tree.PrintTree();
+  std::cout << tree;
 
   return 0;
 }

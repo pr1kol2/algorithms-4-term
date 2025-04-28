@@ -8,37 +8,54 @@ using Complex = std::complex<double>;
 
 const double kPi = std::numbers::pi_v<double>;
 
-void Fft(std::vector<Complex>& a, bool invert) {
-  int n = static_cast<int>(a.size());
+std::vector<int> InputPolynomial() {
+  size_t degree = 0;
+  std::cin >> degree;
 
-  for (int i = 1, j = 0; i < n; ++i) {
+  std::vector<int> polynomial(degree + 1);
+
+  for (size_t i = 0; i <= degree; ++i) {
+    std::cin >> polynomial[degree - i];
+  }
+
+  return polynomial;
+}
+
+void FFT(std::vector<Complex>& poly, bool invert = false) {
+  size_t n = poly.size();
+
+  for (size_t i = 1, j = 0; i < n; ++i) {
     int bit = n >> 1;
     for (; j & bit; bit >>= 1) {
       j ^= bit;
     }
     j |= bit;
     if (i < j) {
-      std::swap(a[i], a[j]);
+      std::swap(poly[i], poly[j]);
     }
   }
 
-  for (int length = 2; length <= n; length <<= 1) {
+  for (size_t length = 2; length <= n; length <<= 1) {
     double angle = 2 * kPi / length * (invert ? -1 : 1);
+
     Complex w_length = Complex(std::cos(angle), std::sin(angle));
-    for (int i = 0; i < n; i += length) {
+
+    for (size_t i = 0; i < n; i += length) {
       Complex w = 1;
-      for (int j = 0; j < length / 2; ++j) {
-        Complex u = a[i + j];
-        Complex v = a[i + j + length / 2] * w;
-        a[i + j] = u + v;
-        a[i + j + length / 2] = u - v;
+      for (size_t j = 0; j < length / 2; ++j) {
+        Complex u = poly[i + j];
+        Complex v = poly[i + j + length / 2] * w;
+
+        poly[i + j] = u + v;
+        poly[i + j + length / 2] = u - v;
+
         w *= w_length;
       }
     }
   }
 
   if (invert) {
-    for (Complex& x : a) {
+    for (Complex& x : poly) {
       x /= n;
     }
   }
@@ -65,36 +82,27 @@ std::vector<int> MultiplyPolynomials(const std::vector<int>& A,
     B_values[i] = Complex(B[i], 0);
   }
 
-  Fft(A_values, false);
-  Fft(B_values, false);
+  FFT(A_values, false);
+  FFT(B_values, false);
 
   for (size_t i = 0; i < fft_size; ++i) {
     A_values[i] *= B_values[i];
   }
 
-  Fft(A_values, true);
+  FFT(A_values, true);
 
   std::vector<int> result(result_size);
   for (size_t i = 0; i < result_size; ++i) {
     result[i] = static_cast<int>(std::lround(A_values[i].real()));
   }
+
   return result;
 }
 
 int main() {
-  size_t n = 0;
-  std::cin >> n;
-  std::vector<int> A(n + 1);
-  for (size_t i = 0; i <= n; ++i) {
-    std::cin >> A[n - i];
-  }
+  std::vector<int> A = InputPolynomial();
 
-  size_t m = 0;
-  std::cin >> m;
-  std::vector<int> B(m + 1);
-  for (size_t i = 0; i <= m; ++i) {
-    std::cin >> B[m - i];
-  }
+  std::vector<int> B = InputPolynomial();
 
   std::vector<int> C = MultiplyPolynomials(A, B);
 
@@ -103,6 +111,4 @@ int main() {
     std::cout << ' ' << C[C.size() - 1 - i];
   }
   std::cout << '\n';
-
-  return 0;
 }

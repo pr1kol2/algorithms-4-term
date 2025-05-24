@@ -1,11 +1,11 @@
 #include <algorithm>
-#include <cstdint>
 #include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <iomanip>
 #include <iostream>
 #include <limits>
 #include <vector>
-#include <cstdlib>
 
 template <typename T>
 struct Point {
@@ -140,7 +140,8 @@ Polygon<T> GrahamScan(const Polygon<T>& poly) {
   }
 
   for (size_t i = n - 1, t = i + 1; i > 0; --i) {
-    while (k >= t && CrossProduct(hull[k - 2], hull[k - 1], points[i - 1]) < 0) {
+    while (k >= t &&
+           CrossProduct(hull[k - 2], hull[k - 1], points[i - 1]) < 0) {
       --k;
     }
     hull[k++] = points[i - 1];
@@ -156,8 +157,10 @@ Polygon<T> MinkowskiSum(const Polygon<T>& A, const Polygon<T>& B) {
   size_t n = A.size();
   size_t m = B.size();
 
-  size_t start_A = std::min_element(A.vertices.begin(), A.vertices.end()) - A.vertices.begin();
-  size_t start_B = std::min_element(B.vertices.begin(), B.vertices.end()) - B.vertices.begin();
+  size_t start_A = std::min_element(A.vertices.begin(), A.vertices.end()) -
+                   A.vertices.begin();
+  size_t start_B = std::min_element(B.vertices.begin(), B.vertices.end()) -
+                   B.vertices.begin();
 
   Polygon<T> result;
 
@@ -175,7 +178,7 @@ Polygon<T> MinkowskiSum(const Polygon<T>& A, const Polygon<T>& B) {
       i_A = (i_A + 1) % n;
       current = current + edge_A;
       continue;
-    } 
+    }
     if (cross_product < 0) {
       i_B = (i_B + 1) % m;
       current = current + edge_B;
@@ -187,6 +190,20 @@ Polygon<T> MinkowskiSum(const Polygon<T>& A, const Polygon<T>& B) {
   } while (i_A != start_A || i_B != start_B);
 
   return result;
+}
+
+double GetMinTime(const Polygon<int64_t>& minkowski_sum) {
+  double result = std::numeric_limits<double>::infinity();
+  size_t k = minkowski_sum.size();
+  for (size_t i = 0; i < k; ++i) {
+    Point<int64_t> a = minkowski_sum[i];
+    Point<int64_t> b = minkowski_sum[(i + 1) % k];
+    double edge_length = std::sqrt(Vector(a, b).LengthSquared());
+    double dist = std::abs((CrossProduct(a, b)) / edge_length);
+    result = std::min(result, dist);
+  }
+
+  return std::max(0.0, result - 60.0);
 }
 
 int main() {
@@ -203,18 +220,6 @@ int main() {
 
   Polygon<int64_t> minkowski_sum = MinkowskiSum(airport, -cloud);
 
-
-  double result = std::numeric_limits<double>::infinity();
-  size_t k = minkowski_sum.size();
-  for (size_t i = 0; i < k; ++i) {
-    Point<int64_t> a = minkowski_sum[i];
-    Point<int64_t> b = minkowski_sum[(i + 1) % k];
-    double edge_length = std::sqrt(Vector(a, b).LengthSquared());
-    double dist =
-        std::abs((CrossProduct(a, b)) / edge_length);
-    result = std::min(result, dist);
-  }
-
-  std::cout << std::fixed << std::setprecision(6)
-            << std::max(0.0L, result - 60.0L) << '\n';
+  std::cout << std::fixed << std::setprecision(6) << GetMinTime(minkowski_sum)
+            << '\n';
 }

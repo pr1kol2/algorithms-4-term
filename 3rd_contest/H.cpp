@@ -203,7 +203,7 @@ std::vector<int> GetZones(std::vector<Point>& attractions,
 
   std::vector<Point> hull = GrahamScan(attractions);
 
-  while (attractions.size() > 0) {
+  while (attractions.size() > 2) {
     for (size_t j = 0; j < k; j++) {
       if (IsPointInsidePolygon(hull, metro_stations[j]) && in_zero_zone) {
         result[j] += 1;

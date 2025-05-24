@@ -129,7 +129,7 @@ struct Normal {
 
   Normal(int64_t a, int64_t b, int64_t c) : a(a), b(b), c(c) {}
 
-  Normal(Point first, Point second) {
+  Normal(const Point& first, const Point& second) {
     int64_t x = second.x - first.x;
     int64_t y = second.y - first.y;
     a = -y;
@@ -138,7 +138,7 @@ struct Normal {
   }
 };
 
-bool PointCheck(Point first, Point second, Point point) {
+bool PointCheck(const Point& first, const Point& second, const Point& point) {
   Normal normal(first, second);
 
   if (normal.a == 0) {
@@ -153,7 +153,8 @@ bool PointCheck(Point first, Point second, Point point) {
           (first.y - point.y) * (second.y - point.y) <= 0);
 }
 
-bool TimesCrossesSides(Point first, Point second, Point point) {
+bool TimesCrossesSides(const Point& first, const Point& second,
+                       const Point& point) {
   if (PointCheck(first, second, point)) {
     if (point.y == first.y || point.y == second.y) {
       return (2 * point.y >= first.y + second.y);
@@ -165,7 +166,8 @@ bool TimesCrossesSides(Point first, Point second, Point point) {
   return false;
 }
 
-bool BelongsToSection(Point first, Point second, Point point) {
+bool BelongsToSection(const Point& first, const Point& second,
+                      const Point& point) {
   Normal normal(first, second);
 
   bool flag1 = (((first.x - point.x) * (second.x - point.x) <= 0) &&
@@ -176,7 +178,7 @@ bool BelongsToSection(Point first, Point second, Point point) {
   return flag1 && flag2;
 }
 
-bool IsPointInsidePolygon(std::vector<Point> vertices, Point point) {
+bool IsPointInsidePolygon(const std::vector<Point>& vertices, Point point) {
   bool result = false;
   for (size_t i = 1; i <= vertices.size(); ++i) {
     if (BelongsToSection(vertices[i % vertices.size()],
@@ -192,24 +194,12 @@ bool IsPointInsidePolygon(std::vector<Point> vertices, Point point) {
   return result;
 }
 
-int main() {
-  size_t n = 0;
-  std::cin >> n;
-  std::vector<Point> attractions(n);
-  for (size_t i = 0; i < n; i++) {
-    std::cin >> attractions[i];
-  }
-
-  size_t k = 0;
-  std::cin >> k;
-  std::vector<Point> metro_stations(k);
-  for (size_t i = 0; i < k; i++) {
-    std::cin >> metro_stations[i];
-  }
-
+std::vector<int> GetZones(std::vector<Point>& attractions,
+                          std::vector<Point>& metro_stations) {
+  size_t k = metro_stations.size();
   std::vector<int> result(k, 0);
 
-  bool in_zero_zone = true;
+  bool in_zero_zone = false;
 
   std::vector<Point> hull = GrahamScan(attractions);
 
@@ -229,9 +219,27 @@ int main() {
     in_zero_zone = true;
   }
 
-  for (size_t i = 0; i < k; i++) {
-    std::cout << result[i] << '\n';
+  return result;
+}
+
+int main() {
+  size_t n = 0;
+  std::cin >> n;
+
+  std::vector<Point> attractions(n);
+  for (auto& attraction : attractions) {
+    std::cin >> attraction;
   }
 
-  return 0;
+  size_t k = 0;
+  std::cin >> k;
+
+  std::vector<Point> metro_stations(k);
+  for (auto& station : metro_stations) {
+    std::cin >> station;
+  }
+
+  for (const auto& zone : GetZones(attractions, metro_stations)) {
+    std::cout << zone << '\n';
+  }
 }
